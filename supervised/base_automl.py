@@ -1103,6 +1103,7 @@ class BaseAutoML(BaseEstimator, ABC):
                 self._privileged_groups,
                 self._underprivileged_groups,
                 self._manual_transformer,
+                self._validation_strategy,
             )
             self.tuner = tuner
 

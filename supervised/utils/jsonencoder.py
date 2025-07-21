@@ -27,7 +27,11 @@ class MLJSONEncoder(json.JSONEncoder):
             return float(o)
         elif isinstance(o, np.ndarray):
             return o.tolist()
-        elif isinstance(obj, date):
-            return obj.strftime("%Y-%m-%d")
-
+        elif isinstance(o, date):
+            return o.strftime("%Y-%m-%d")
+        elif hasattr(o, 'fit') and hasattr(o, 'transform'):
+            # Handle sklearn-like transformers (including manual_transformer)
+            # Note: The actual object is saved separately as a joblib file
+            return f"<{o.__class__.__module__}.{o.__class__.__name__} object (saved separately)>"
+        
         return super(MLJSONEncoder, self).default(o)

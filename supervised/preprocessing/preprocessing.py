@@ -55,6 +55,8 @@ class Preprocessing(object):
         self._add_random_feature = self._params.get("add_random_feature", False)
         self._drop_features = self._params.get("drop_features", [])
         self._manual_transformer = self._params.get("manual_transformer", None)
+        self._X_full_path = self._params.get("X_full_path", None)
+        self._y_full_path = self._params.get("y_full_path", None)
         self._model_name = model_name
         self._k_fold = k_fold
         self._repeat = repeat
@@ -367,10 +369,30 @@ class Preprocessing(object):
                     y_validation = self._scale_y.transform(y_validation)
                     y_validation = y_validation["target"]
 
-        # Apply manual transformer if no y_validation but was fitted during training  
+        # Apply manual transformer if no y_validation (prediction time)
         if (self._manual_transformer is not None and X_validation is not None 
             and y_validation is None):
-            logger.debug("Applying manual transformer during prediction (no targets)")
+            logger.debug("Applying manual transformer during prediction - refitting on full training data")
+            
+            # For prediction, we need to refit the transformer on full training data
+            # Try to load the saved training data if available
+            try:
+                from supervised.utils.utils import load_data
+                if self._X_full_path and self._y_full_path:
+                    X_full_train = load_data(self._X_full_path)
+                    y_full_train_df = load_data(self._y_full_path)
+                    y_full_train = y_full_train_df["target"]  # Extract target column
+                    logger.debug(f"Loaded full training data: {X_full_train.shape}")
+                    
+                    # Refit transformer on full training data
+                    self._manual_transformer.fit(X_full_train, y_full_train)
+                    logger.debug("Manual transformer refitted on full training data")
+                else:
+                    logger.warning("Cannot access full training data paths for manual transformer refitting")
+            except Exception as e:
+                logger.warning(f"Failed to refit manual transformer on full training data: {e}")
+            
+            # Transform the validation/test data
             X_validation = self._manual_transformer.transform(X_validation)
             # Ensure we have a DataFrame
             if not isinstance(X_validation, pd.DataFrame):

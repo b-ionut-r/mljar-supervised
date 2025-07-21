@@ -56,6 +56,7 @@ class MljarTuner:
         privileged_groups=[],
         underprivileged_groups=[],
         manual_transformer=None,
+        validation_strategy=None,
     ):
         logger.debug("MljarTuner.__init__")
         self._start_random_models = tuner_params.get("start_random_models", 5)
@@ -84,6 +85,7 @@ class MljarTuner:
         self._privileged_groups = privileged_groups
         self._underprivileged_groups = underprivileged_groups
         self._manual_transformer = manual_transformer
+        self._validation_strategy = validation_strategy
         self._seed = seed
         self._unique_params_keys = []
 
@@ -1384,6 +1386,10 @@ class MljarTuner:
         # Add manual transformer if provided
         if self._manual_transformer is not None:
             preprocessing_params["manual_transformer"] = self._manual_transformer
+            # Also pass the paths to full training data for prediction time refitting
+            if hasattr(self, '_validation_strategy') and self._validation_strategy:
+                preprocessing_params["X_full_path"] = self._validation_strategy.get("X_path")
+                preprocessing_params["y_full_path"] = self._validation_strategy.get("y_path")
 
         model_params = {
             "additional": model_additional,
