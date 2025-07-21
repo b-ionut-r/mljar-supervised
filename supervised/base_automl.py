@@ -108,6 +108,7 @@ class BaseAutoML(BaseEstimator, ABC):
         self._underprivileged_groups = []
         self._optuna_verbose = True
         self._n_jobs = -1
+        self._manual_transformer = None
         self._id = str(uuid.uuid4())
 
     def _get_tuner_params(
@@ -1004,6 +1005,7 @@ class BaseAutoML(BaseEstimator, ABC):
         self._optuna_verbose = self._get_optuna_verbose()
         self._n_jobs = self._get_n_jobs()
         self._random_state = self._get_random_state()
+        self._manual_transformer = self._get_manual_transformer()
 
         if sensitive_features is not None:
             self._fairness_metric = self._get_fairness_metric()
@@ -1100,6 +1102,7 @@ class BaseAutoML(BaseEstimator, ABC):
                 self._fairness_threshold,
                 self._privileged_groups,
                 self._underprivileged_groups,
+                self._manual_transformer,
             )
             self.tuner = tuner
 
@@ -1929,6 +1932,10 @@ class BaseAutoML(BaseEstimator, ABC):
         """Gets the current random_state"""
         self._validate_random_state()
         return deepcopy(self.random_state)
+
+    def _get_manual_transformer(self):
+        """Gets the current manual_transformer"""
+        return self.manual_transformer
 
     def _validate_mode(self):
         """Validates mode parameter"""

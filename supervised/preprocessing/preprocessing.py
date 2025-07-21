@@ -54,6 +54,7 @@ class Preprocessing(object):
         self._kmeans = None
         self._add_random_feature = self._params.get("add_random_feature", False)
         self._drop_features = self._params.get("drop_features", [])
+        self._manual_transformer = self._params.get("manual_transformer", None)
         self._model_name = model_name
         self._k_fold = k_fold
         self._repeat = repeat
@@ -85,6 +86,17 @@ class Preprocessing(object):
             X_train, y_train, sample_weight, _ = ExcludeRowsMissingTarget.transform(
                 X_train, y_train, sample_weight
             )
+            
+            # Apply manual transformer as first step if provided
+            if self._manual_transformer is not None and X_train is not None:
+                logger.debug("Applying manual transformer")
+                if not hasattr(self._manual_transformer, 'fit') or not hasattr(self._manual_transformer, 'transform'):
+                    raise ValueError("manual_transformer must implement both fit() and transform() methods")
+                self._manual_transformer.fit(X_train, y_train)
+                X_train = self._manual_transformer.transform(X_train)
+                # Ensure we have a DataFrame
+                if not isinstance(X_train, pd.DataFrame):
+                    X_train = pd.DataFrame(X_train)
 
             if PreprocessingCategorical.CONVERT_INTEGER in target_preprocessing:
                 logger.debug("Convert target to integer")
@@ -320,6 +332,14 @@ class Preprocessing(object):
             ) = ExcludeRowsMissingTarget.transform(
                 X_validation, y_validation, sample_weight_validation
             )
+            
+            # Apply manual transformer if it was fitted during training
+            if self._manual_transformer is not None and X_validation is not None:
+                logger.debug("Applying manual transformer during prediction")
+                X_validation = self._manual_transformer.transform(X_validation)
+                # Ensure we have a DataFrame
+                if not isinstance(X_validation, pd.DataFrame):
+                    X_validation = pd.DataFrame(X_validation)
 
             if PreprocessingCategorical.CONVERT_INTEGER in target_preprocessing:
                 if y_validation is not None and self._categorical_y is not None:
@@ -347,6 +367,15 @@ class Preprocessing(object):
                     y_validation = self._scale_y.transform(y_validation)
                     y_validation = y_validation["target"]
 
+        # Apply manual transformer if no y_validation but was fitted during training  
+        if (self._manual_transformer is not None and X_validation is not None 
+            and y_validation is None):
+            logger.debug("Applying manual transformer during prediction (no targets)")
+            X_validation = self._manual_transformer.transform(X_validation)
+            # Ensure we have a DataFrame
+            if not isinstance(X_validation, pd.DataFrame):
+                X_validation = pd.DataFrame(X_validation)
+        
         # columns preprocessing
         if len(self._remove_columns) and X_validation is not None:
             cols_to_remove = [

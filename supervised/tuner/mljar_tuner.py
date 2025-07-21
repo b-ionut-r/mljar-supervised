@@ -55,6 +55,7 @@ class MljarTuner:
         fairness_threshold=None,
         privileged_groups=[],
         underprivileged_groups=[],
+        manual_transformer=None,
     ):
         logger.debug("MljarTuner.__init__")
         self._start_random_models = tuner_params.get("start_random_models", 5)
@@ -82,6 +83,7 @@ class MljarTuner:
         self._fairness_threshold = fairness_threshold
         self._privileged_groups = privileged_groups
         self._underprivileged_groups = underprivileged_groups
+        self._manual_transformer = manual_transformer
         self._seed = seed
         self._unique_params_keys = []
 
@@ -1378,6 +1380,10 @@ class MljarTuner:
         preprocessing_params = PreprocessingTuner.get(
             required_preprocessing, self._data_info, self._ml_task
         )
+        
+        # Add manual transformer if provided
+        if self._manual_transformer is not None:
+            preprocessing_params["manual_transformer"] = self._manual_transformer
 
         model_params = {
             "additional": model_additional,

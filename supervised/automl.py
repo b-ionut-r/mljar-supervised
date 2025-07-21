@@ -83,6 +83,7 @@ class AutoML(BaseAutoML):
         n_jobs: int = -1,
         verbose: int = 1,
         random_state: int = 1234,
+        manual_transformer = None,
     ):
         """
         Initialize `AutoML` object.
@@ -298,6 +299,10 @@ class AutoML(BaseAutoML):
 
             random_state (int): Controls the randomness of the `AutoML`
 
+            manual_transformer: A manual feature engineering transformer that implements fit() and transform() methods. 
+                This transformer will be applied as the first preprocessing step before any other transformations. 
+                If None, no manual transformation is applied.
+
 
         Examples:
 
@@ -400,6 +405,7 @@ class AutoML(BaseAutoML):
         self.underprivileged_groups = underprivileged_groups
         self.n_jobs = n_jobs
         self.random_state = random_state
+        self.manual_transformer = manual_transformer
 
     def fit(
         self,
